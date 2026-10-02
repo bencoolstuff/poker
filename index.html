@@ -38,7 +38,9 @@ header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-be
 h1{font:700 30px/1 var(--display);letter-spacing:.01em;margin:0;text-transform:uppercase;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 h1 span{color:var(--felt)}
 h1 .badge{font-size:15px;letter-spacing:.12em;background:var(--felt);color:var(--felt-ink);padding:3px 8px;border-radius:6px}
-.sub{color:var(--muted);font-size:13px;margin-top:6px}
+.tagline{font:600 clamp(17px,2.2vw,21px)/1.25 var(--display);letter-spacing:.02em;color:var(--felt);margin:8px 0 0;max-width:90ch;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin:4px 0 0;max-width:72ch}
+.byline{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 0 0}
 nav{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;flex-wrap:wrap}
 nav button{font:600 15px var(--display);letter-spacing:.06em;text-transform:uppercase;border:0;background:none;color:var(--muted);padding:7px 12px;border-radius:7px;cursor:pointer}
 nav button[aria-selected="true"]{background:var(--felt);color:var(--felt-ink)}
@@ -199,7 +201,9 @@ button.seat:hover{border-color:var(--felt)}
 <header>
   <div>
     <h1>TRex's <span>Tournament</span> Trainer <span class="badge">TTT</span></h1>
-    <div class="sub">ICM, ranges, drills and table prep. Study between sessions, not during them.</div>
+    <p class="tagline">Stop playing GTO against everyone. Train to beat the players actually at your table.</p>
+    <p class="sub">A tournament poker study tool. Review hands with ICM, plan your final table seat by seat, and drill pre-flop and post-flop spots against Nits, Fish, TAGs and LAGs. Study between sessions, not during them.</p>
+    <p class="byline">Created by Ben Chelladurai</p>
   </div>
   <nav role="tablist" aria-label="Sections">
     <button role="tab" id="tab-review" aria-selected="true" data-tab="review">Review</button>
@@ -346,7 +350,7 @@ button.seat:hover{border-color:var(--felt)}
   <div class="panel"><h2>Player types</h2><div class="types" id="typeGuide"></div></div>
 </section>
 
-<footer>Method: pre-flop all-in spots use exact Malmuth-Harville ICM and a 169×169 equity table, with ranges solved to an equilibrium then shifted by player type. Deeper raise/call/3-bet frequencies come from an ICM- and read-adjusted chart model. Post-flop drills grade you on equity against a modeled betting range for each player type - guidance, not solver output. ClubWPT Gold's terms ban HUDs and real-time assistance, so keep this to study.</footer>
+<footer><b>TRex's Tournament Trainer</b> - created by Ben Chelladurai. <br>Method: pre-flop all-in spots use exact Malmuth-Harville ICM and a 169×169 equity table, with ranges solved to an equilibrium then shifted by player type. Deeper raise/call/3-bet frequencies come from an ICM- and read-adjusted chart model. Post-flop drills grade you on equity against a modeled betting range for each player type - guidance, not solver output. ClubWPT Gold's terms ban HUDs and real-time assistance, so keep this to study.</footer>
 </div>
 
 <script>
