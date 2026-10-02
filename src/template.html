@@ -1,0 +1,350 @@
+<title>TRex's Tournament Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: study desk - setup on the left, felt table + solver-style readout on the right; tabs per training mode */
+:root{
+  --bg:#eef2ef; --surface:#ffffff; --sunken:#f6f8f6; --ink:#13201b; --muted:#5b6a63; --line:#d6ded9;
+  --felt:#0d6a4c; --felt-ink:#ffffff; --felt-soft:#e1efe8;
+  --allin:#8f1d24; --raise:#d23f3f; --call:#2c9a58; --fold:#3c7cc2; --warn:#b7791f; --bad:#b4232f; --good:#1f7a4a;
+  --felt-hi:#1d7a55; --felt-lo:#0e4a33; --rail:#3a2a1d; --seat:#fbfcfb; --chip:#e2b33c;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1311; --surface:#151d1a; --sunken:#111815; --ink:#e4ebe7; --muted:#90a097; --line:#27332e;
+  --felt:#38b886; --felt-ink:#06140e; --felt-soft:#173027;
+  --allin:#b3343b; --raise:#e25555; --call:#36ad66; --fold:#4b8ad3; --warn:#d8a142; --bad:#e0575f; --good:#45c07f;
+  --felt-hi:#17603f; --felt-lo:#0a2f20; --rail:#2a1f16; --seat:#1b2521; --chip:#e2b33c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1311; --surface:#151d1a; --sunken:#111815; --ink:#e4ebe7; --muted:#90a097; --line:#27332e;
+  --felt:#38b886; --felt-ink:#06140e; --felt-soft:#173027;
+  --allin:#b3343b; --raise:#e25555; --call:#36ad66; --fold:#4b8ad3; --warn:#d8a142; --bad:#e0575f; --good:#45c07f;
+  --felt-hi:#17603f; --felt-lo:#0a2f20; --rail:#2a1f16; --seat:#1b2521; --chip:#e2b33c; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--body);padding-inline:16px;padding-block:0 40px}
+.wrap{max-width:1240px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-block:20px 14px}
+h1{font:700 30px/1 var(--display);letter-spacing:.01em;margin:0;text-transform:uppercase;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1 span{color:var(--felt)}
+h1 .badge{font-size:15px;letter-spacing:.12em;background:var(--felt);color:var(--felt-ink);padding:3px 8px;border-radius:6px}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+nav{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;flex-wrap:wrap}
+nav button{font:600 15px var(--display);letter-spacing:.06em;text-transform:uppercase;border:0;background:none;color:var(--muted);padding:7px 12px;border-radius:7px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--felt);color:var(--felt-ink)}
+button{font-family:var(--body)}
+:focus-visible{outline:2px solid var(--felt);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:minmax(0,500px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.panel h2{font:600 17px var(--display);letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;color:var(--muted)}
+.panel h3{font:600 15px var(--display);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px;color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>label{flex:1 1 90px;min-width:0}
+label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:14px var(--body);color:var(--ink);background:var(--sunken);border:1px solid var(--line);border-radius:7px;padding:7px 9px;width:100%;min-width:0;text-transform:none;letter-spacing:0}
+textarea{font-family:var(--mono);font-size:12px;min-height:80px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--sunken);color:var(--muted);padding:8px 8px;font-weight:600;font-size:12.5px;cursor:pointer;border-right:1px solid var(--line);white-space:nowrap}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--felt);color:var(--felt-ink)}
+.edhead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.edhead label{flex:0 0 auto}
+.unitseg{min-width:150px}
+table.seats{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.seats th{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:600;padding:0 3px 4px;white-space:nowrap}
+.seats td{padding:3px 2px;vertical-align:middle}
+.seats td.sn{font:600 15px var(--display);letter-spacing:.03em;white-space:nowrap}
+.seats td.sn small{display:block;font:500 11px var(--body);color:var(--muted);letter-spacing:.04em}
+.seats input,.seats select{padding:5px 6px;font-size:13px}
+.seats input.num{font-family:var(--mono);width:68px}
+.seats input.sm{font-family:var(--mono);width:40px;padding-inline:4px}
+.seats select{width:88px;padding-inline:4px}
+.seats input.nm{width:82px}
+.seats tr.hero td.sn{color:var(--felt)}
+.seats tr.out{opacity:.45}
+.seats input[type=radio],.seats input[type=checkbox]{width:auto;accent-color:var(--felt)}
+.tablewrap{overflow-x:auto}
+.hint{font-size:12px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--sunken);color:var(--ink);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--felt);border-color:var(--felt);color:var(--felt-ink)}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.err{color:var(--bad);font-weight:600}
+/* result */
+.cards{display:flex;gap:6px}
+.card{width:44px;height:60px;border-radius:7px;background:#fff;border:1px solid #cfd6d2;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 22px/1 var(--display);color:#1a1a1a;box-shadow:0 1px 0 rgba(0,0,0,.08)}
+.card.r{color:#c0262f}
+.card small{font-size:18px}
+.rec{font:700 34px/1 var(--display);text-transform:uppercase;letter-spacing:.02em}
+.rec .size{font-size:20px;color:var(--muted);font-weight:600;margin-left:6px}
+.conf{display:inline-block;font:600 12px var(--body);padding:3px 9px;border-radius:99px;background:var(--felt-soft);color:var(--felt);margin-top:6px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:14px}
+.tiles.t3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:520px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{border-radius:8px;padding:10px 10px 8px;color:#fff;min-height:88px;display:flex;flex-direction:column;justify-content:space-between}
+.tile .t{font:600 18px var(--display);letter-spacing:.02em}
+.tile .p{font:600 28px/1 var(--display)}
+.tile .e{font:500 11.5px var(--mono);opacity:.9}
+.tile.dim{filter:saturate(.35);opacity:.55}
+.t-allin{background:var(--allin)}.t-raise{background:var(--raise)}.t-call{background:var(--call)}.t-fold{background:var(--fold)}
+.factors{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:14px}
+.factor{background:var(--sunken);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.factor b{display:block;font:600 20px var(--display);font-variant-numeric:tabular-nums}
+.factor span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.why{margin:12px 0 0;padding-left:18px}
+.why li{margin:3px 0}
+.sumbar{display:flex;height:16px;border-radius:5px;overflow:hidden;margin-top:6px;background:var(--sunken)}
+.sumbar div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.hgrid{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:2px;margin-top:12px;max-width:560px}
+.hgrid button{aspect-ratio:1;border:0;border-radius:3px;font:600 clamp(8px,1.5vw,12px) var(--mono);color:#fff;padding:0;cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.35);max-width:100%;background:var(--fold)}
+.hgrid button.sel{outline:3px solid var(--ink);outline-offset:-1px;z-index:1}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600}
+.pill.good{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.pill.ok{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.actbtns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.actbtns.a3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.actbtns button{border:0;border-radius:8px;padding:14px 6px;color:#fff;font:600 19px var(--display);letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.actbtns button:disabled{opacity:.3;cursor:default}
+@media (max-width:520px){.actbtns,.actbtns.a3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font:700 30px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.kpi span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+table.data{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
+.data th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.data td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.data tr.click{cursor:pointer}
+.data tr.click:hover td{background:var(--sunken)}
+.data tr.on td{background:var(--felt-soft)}
+.meter{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--sunken);border:1px solid var(--line)}
+.empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+.spotline{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.mini-bar{display:inline-block;height:8px;border-radius:4px;background:var(--felt);vertical-align:middle;margin-right:6px}
+footer{color:var(--muted);font-size:12px;margin-top:22px;max-width:80ch}
+/* poker table */
+.dhead{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.ptable{position:relative;width:100%;max-width:100%;aspect-ratio:16/10;margin-block:8px 14px}
+.ptable.hu{aspect-ratio:16/9}
+@media (max-width:600px){.ptable{aspect-ratio:1/1.32}.ptable.hu{aspect-ratio:1/1.05}}
+.felt{position:absolute;inset:13% 10%;border-radius:999px;background:radial-gradient(ellipse at 50% 45%,var(--felt-hi),var(--felt-lo) 75%);border:clamp(6px,1.3vw,12px) solid var(--rail);box-shadow:inset 0 0 40px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.18)}
+@media (max-width:600px){.felt{inset:9% 15%}}
+.seat{position:absolute;transform:translate(-50%,-50%);width:clamp(76px,14vw,116px);background:var(--seat);border:1px solid var(--line);border-radius:10px;padding:5px 6px 6px;text-align:center;line-height:1.15;box-shadow:0 2px 6px rgba(0,0,0,.18);z-index:2;color:var(--ink);font:inherit}
+button.seat{cursor:pointer}
+button.seat:hover{border-color:var(--felt)}
+@media (max-width:600px){.seat{width:clamp(70px,22vw,96px)}}
+.seat.hero{border:2px solid var(--felt)}
+.seat.villain{border:2px solid var(--raise);box-shadow:0 0 0 3px color-mix(in srgb,var(--raise) 25%,transparent)}
+.seat.focus{border:2px solid var(--warn)}
+.seat.folded{opacity:.42}
+.seat.emptyseat{opacity:.35;background:transparent;border-style:dashed;box-shadow:none}
+.ppos{font:600 clamp(11px,1.5vw,13px) var(--display);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pname{font:500 clamp(10px,1.3vw,11.5px) var(--body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat.hero .ppos{color:var(--felt)}.seat.villain .ppos{color:var(--raise)}
+.pstack{font:700 clamp(15px,2.4vw,21px)/1.05 var(--display);font-variant-numeric:tabular-nums}
+.pstack small{font-size:.6em;color:var(--muted);margin-left:2px;font-weight:600}
+.cov{font-style:normal;font-size:.55em;color:var(--warn);margin-left:3px;vertical-align:.25em}
+.preads{font:500 clamp(9.5px,1.3vw,11.5px) var(--mono);margin-top:2px;display:flex;flex-wrap:wrap;gap:3px;justify-content:center;align-items:center}
+.nr{color:var(--muted)}
+.ptag{font:600 clamp(9px,1.25vw,10.5px) var(--body);padding:0 5px;border-radius:99px;letter-spacing:.02em;white-space:nowrap}
+.ptag.nit{background:color-mix(in srgb,var(--fold) 22%,transparent);color:var(--fold)}
+.ptag.fish{background:color-mix(in srgb,var(--warn) 24%,transparent);color:var(--warn)}
+.ptag.tag{background:color-mix(in srgb,var(--call) 22%,transparent);color:var(--call)}
+.ptag.lag{background:color-mix(in srgb,var(--raise) 20%,transparent);color:var(--raise)}
+.ptag.custom{background:var(--sunken);color:var(--muted)}
+.pstat{display:block;margin-top:3px;font:600 clamp(9.5px,1.3vw,11px) var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pstat.act{color:#fff;background:var(--raise);border-radius:5px;padding:1px 0}
+.mini{display:flex;justify-content:center;gap:3px;margin:-24px 0 4px}
+.mini .card{width:clamp(28px,4.2vw,38px);height:clamp(39px,5.8vw,52px);font-size:clamp(14px,2.1vw,19px);border-radius:5px}
+.mini .card small{font-size:.85em}
+.pbet{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:4px;font:600 clamp(11px,1.5vw,13px) var(--mono);color:#fff;background:rgba(0,0,0,.35);padding:1px 7px 1px 3px;border-radius:99px;z-index:1;white-space:nowrap}
+.pbet i{width:12px;height:12px;border-radius:50%;background:var(--chip);border:2px dashed rgba(255,255,255,.75)}
+.pbet.big{background:var(--raise)}
+.dealer{position:absolute;transform:translate(-50%,-50%);width:clamp(18px,2.5vw,24px);height:clamp(18px,2.5vw,24px);border-radius:50%;background:#fff;color:#111;font:700 clamp(10px,1.5vw,13px)/clamp(18px,2.5vw,24px) var(--display);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.4);z-index:1}
+.pot{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);text-align:center;color:#fff;line-height:1.1;width:60%}
+.pot span{display:block;font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+.pot b{font:700 clamp(18px,3vw,26px) var(--display)}
+.pot em{display:block;font:400 10.5px var(--body);font-style:normal;opacity:.7}
+.board{display:flex;gap:4px;justify-content:center;margin-bottom:6px}
+.board .card{width:clamp(30px,5vw,46px);height:clamp(42px,7vw,64px);font-size:clamp(15px,2.4vw,22px)}
+.orbit{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.orb{background:var(--sunken);border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:12px}
+.orb b{display:block;font:600 16px var(--display);letter-spacing:.03em}
+.orb.now{border-color:var(--felt);background:var(--felt-soft)}
+.types{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.typecard{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--sunken)}
+.typecard h4{margin:0 0 4px;font:700 20px var(--display);letter-spacing:.03em;text-transform:uppercase}
+.typecard p{margin:4px 0;font-size:13px}
+.quiz button.opt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--sunken);color:var(--ink);border-radius:8px;padding:11px 12px;font:600 16px var(--body);cursor:pointer;margin-top:6px}
+.quiz button.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 18%,transparent)}
+.quiz button.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.qtext{font:600 22px/1.25 var(--display);letter-spacing:.01em}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>TRex's <span>Tournament</span> Trainer <span class="badge">TTT</span></h1>
+    <div class="sub">ICM, ranges, drills and table prep. Study between sessions, not during them.</div>
+  </div>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-review" aria-selected="true" data-tab="review">Review</button>
+    <button role="tab" id="tab-prep" aria-selected="false" data-tab="prep">Table Prep</button>
+    <button role="tab" id="tab-drill" aria-selected="false" data-tab="drill">Pre-Flop Drills</button>
+    <button role="tab" id="tab-post" aria-selected="false" data-tab="post">Post-Flop Drills</button>
+    <button role="tab" id="tab-leaks" aria-selected="false" data-tab="leaks">Leaks</button>
+    <button role="tab" id="tab-tools" aria-selected="false" data-tab="tools">Tools</button>
+  </nav>
+</header>
+
+<!-- REVIEW -->
+<section id="view-review" class="grid2">
+  <div class="stack">
+    <div class="panel stack">
+      <h2>The hand</h2>
+      <div class="seg" id="scenarioSeg" role="group" aria-label="Situation">
+        <button data-v="rfi" aria-pressed="true">Folded to me</button>
+        <button data-v="vsOpen" aria-pressed="false">Facing a raise</button>
+        <button data-v="vsShove" aria-pressed="false">Facing all-in</button>
+      </div>
+      <div class="row">
+        <label>My hand<input id="hand" value="A9o" placeholder="AJs, 77, KhQd" autocomplete="off"></label>
+        <label id="villainL">Raiser / shover<select id="villain"></select></label>
+        <label id="openSizeL">Raise to (bb)<input id="openSize" type="number" step="0.1" min="1" value="2.2"></label>
+      </div>
+      <div class="hint" id="villainHint">Tip: tap a seat on the table to pick who raised.</div>
+    </div>
+    <div class="panel stack" id="editorReview"></div>
+  </div>
+  <div class="stack">
+    <div class="panel"><div id="tableReview"></div></div>
+    <div class="panel" id="result" aria-live="polite"></div>
+    <div class="panel" id="logPanel">
+      <h2>Log what I did</h2>
+      <div class="row" style="align-items:flex-end">
+        <label>My action<select id="taken"><option value="fold">Fold</option><option value="call">Call</option><option value="raise">Raise</option><option value="allin">All-in</option></select></label>
+        <label>Note<input id="note" placeholder="Level 14, tilted?"></label>
+        <button class="btn primary" id="logBtn">Grade &amp; save</button>
+      </div>
+      <div id="logMsg" class="hint" style="margin-top:8px"></div>
+    </div>
+    <div class="panel" id="rangePanel"></div>
+  </div>
+</section>
+
+<!-- TABLE PREP -->
+<section id="view-prep" class="grid2" hidden>
+  <div class="stack">
+    <div class="panel stack" id="editorPrep"></div>
+  </div>
+  <div class="stack">
+    <div class="panel">
+      <div class="dhead"><h2 style="margin:0">The table</h2>
+        <div class="row" style="gap:6px"><button class="btn sm" id="btnPrev">◂ Button back</button><button class="btn sm" id="btnNext">Next hand ▸</button></div></div>
+      <div id="tablePrep"></div>
+      <div class="hint">Tap a player to see your ranges against them.</div>
+    </div>
+    <div class="panel" id="prepPlan"></div>
+    <div class="panel" id="prepGrid"></div>
+    <div class="panel" id="prepOrbit"></div>
+    <div class="panel" id="prepICM"></div>
+  </div>
+</section>
+
+<!-- PRE-FLOP DRILLS -->
+<section id="view-drill" hidden>
+  <div class="grid2">
+    <div class="panel stack">
+      <h2>Drill settings</h2>
+      <label>Spot type<select id="dScen"><option value="mix">Mixed</option><option value="rfi">Folded to me</option><option value="vsOpen">Facing a raise</option><option value="vsShove">Facing all-in</option></select></label>
+      <label>Stage<select id="dStage"><option value="mix">Mixed</option><option value="early">Early (deep field)</option><option value="bubble">Bubble</option><option value="ft">Final table</option></select></label>
+      <label>Stacks<select id="dStack"><option value="mix">Mixed 8-50bb</option><option value="short">Short 6-15bb</option><option value="mid">Mid 15-30bb</option><option value="deep">Deep 30-60bb</option></select></label>
+      <label style="flex-direction:row;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink)"><input type="checkbox" id="dReads" checked style="width:auto"> Random player types</label>
+      <button class="btn primary" id="dNew">Deal a spot</button>
+      <div class="kpis" id="dScore"></div>
+    </div>
+    <div class="stack">
+      <div class="panel stack" id="dSpot"></div>
+      <div class="panel" id="dResult" hidden></div>
+    </div>
+  </div>
+</section>
+
+<!-- POST-FLOP DRILLS -->
+<section id="view-post" hidden>
+  <div class="grid2">
+    <div class="panel stack">
+      <h2>Post-flop training</h2>
+      <div class="seg" id="postMode" role="group" aria-label="Mode">
+        <button data-m="dec" aria-pressed="true">Decisions</button>
+        <button data-m="sprint" aria-pressed="false">Math Sprint</button>
+      </div>
+      <div id="postSettings" class="stack">
+        <label>Villain type<select id="pType"><option value="mix">Mixed</option><option value="nit">Nit</option><option value="fish">Fish</option><option value="tag">TAG Reg</option><option value="lag">LAG Reg</option></select></label>
+        <label>Street<select id="pStreet"><option value="mix">Mixed</option><option value="3">Flop</option><option value="4">Turn</option><option value="5">River</option></select></label>
+        <button class="btn primary" id="pNew">Deal a spot</button>
+        <div class="hint">You called a raise preflop. Villain bets - fold, call or raise? Graded on your equity against how this player type bets.</div>
+      </div>
+      <div id="sprintSettings" class="stack" hidden>
+        <div class="hint">10 quick questions: pot odds, outs, MDF, SPR. Answer fast - it's the math you need at the table.</div>
+        <button class="btn primary" id="sNew">Start a sprint</button>
+      </div>
+      <div class="kpis" id="pScore"></div>
+    </div>
+    <div class="stack">
+      <div class="panel stack" id="pSpot"></div>
+      <div class="panel" id="pResult" hidden></div>
+    </div>
+  </div>
+</section>
+
+<!-- LEAKS -->
+<section id="view-leaks" class="stack" hidden>
+  <div class="kpis" id="lKpis"></div>
+  <div class="panel"><h2>Loose vs tight</h2><div id="lMeter"></div></div>
+  <div class="panel"><h2>Top leaks</h2><div class="tablewrap" id="lTable"></div></div>
+  <div class="panel"><h2>Logged decisions</h2><div class="tablewrap" id="lHands"></div></div>
+  <div class="panel stack">
+    <h2>Back up or move my log</h2>
+    <div class="row">
+      <button class="btn" id="exportBtn">Copy log</button>
+      <button class="btn" id="importBtn">Import pasted log</button>
+      <button class="btn" id="clearBtn">Clear log</button>
+    </div>
+    <textarea id="io" placeholder="Paste a copied log here, then Import"></textarea>
+    <div class="hint" id="ioMsg">The log and saved tables live in this browser. Copy the log to keep a backup or move it to another device.</div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section id="view-tools" class="stack" hidden>
+  <div class="grid2">
+    <div class="panel stack">
+      <h2>Bet math</h2>
+      <div class="row">
+        <label>Pot before bet (bb)<input id="mPot" type="number" value="6" step="0.5"></label>
+        <label>Bet (bb)<input id="mBet" type="number" value="4" step="0.5"></label>
+        <label>Effective stack (bb)<input id="mStack" type="number" value="24" step="0.5"></label>
+      </div>
+    </div>
+    <div class="panel" id="mOut"></div>
+  </div>
+  <div class="panel"><h2>Player types</h2><div class="types" id="typeGuide"></div></div>
+</section>
+
+<footer>Method: pre-flop all-in spots use exact Malmuth-Harville ICM and a 169×169 equity table, with ranges solved to an equilibrium then shifted by player type. Deeper raise/call/3-bet frequencies come from an ICM- and read-adjusted chart model. Post-flop drills grade you on equity against a modeled betting range for each player type - guidance, not solver output. ClubWPT Gold's terms ban HUDs and real-time assistance, so keep this to study.</footer>
+</div>
+
+<script>
+const EQDATA = /*EQDATA*/;
+/*ENGINE*/
+/*POSTFLOP*/
+</script>
+<script>
+/*APP*/
+</script>
